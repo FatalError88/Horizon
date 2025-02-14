@@ -1,9 +1,7 @@
 import socket
 import threading
 from datetime import datetime
-import sys
-import os
-import hashlib
+
 clients = []
 usernames = {}
 time = datetime.now()
@@ -13,20 +11,7 @@ INFO = "INFO"
 CORE = "CORE"
 USER = "USER"
 CHAT = "CHAT"
-def getscriptpath():
-    scriptpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-    return scriptpath
-def calculate_CUUID(file_path, start_line, end_line):
-    with open(file_path+"/main.py", 'r') as file:
-        lines = file.readlines()
-        # Extract the lines between start_line and end_line
-        selected_lines = lines[start_line-1:end_line]
-        # Concatenate the lines into a single string
-        data = ''.join(selected_lines)
-        # Compute the checksum using SHA-256
-        checksum = hashlib.sha256(data.encode()).hexdigest()
-        return checksum
-CVUUID = calculate_CUUID(getscriptpath(),0,98)
+
 def broadcast(message, sender_socket=None):
     for client in clients:
         if client != sender_socket:
@@ -38,7 +23,7 @@ def broadcast(message, sender_socket=None):
 def format_message(message,type):
     formatted_message = f"[{time} {type}]" + message
     return formatted_message
-def handle_client(client_socket,SCVUUID):
+def handle_client(client_socket,):
     while True:
         try:
             message = client_socket.recv(1024)
@@ -51,12 +36,8 @@ def handle_client(client_socket,SCVUUID):
                     print(server_join_message)
                     user_join_message = f"{username} has joined the chat"
                     broadcast(user_join_message.encode('utf-8'))
-                elif decoded_message.startswith("/"):
-                    handle_command(decoded_message, client_socket)
-                elif decoded_message.startwith("CUUID"):
-                    client_CVUUID = decoded_message.split(":")[1]
-                    if client_CVUUID != SCVUUID:
-                        raise ConnectionRefusedError("Incompatible Client")
+                elif decoded_message.startswith("/") :
+                    handle_command(decoded_message,client_socket)
                 else:
                     username = usernames.get(client_socket, "Unknown")
                     broadcast_message = f"{username}: {decoded_message}"
@@ -81,7 +62,7 @@ def handle_command(command, client_socket):
         client_socket.send(f"Connected clients:\n{client_list}".encode('utf-8'))
 
 def start_server(host='localhost', port=12345):
-    CVUUID = calculate_CUUID(getscriptpath(),0,98)
+    
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((host, port))
     server_socket.listen(5)
@@ -91,7 +72,7 @@ def start_server(host='localhost', port=12345):
         client_socket, addr = server_socket.accept()
         print(format_message(f"Connection from {addr}",USER))
         clients.append(client_socket)
-        thread = threading.Thread(target=handle_client, args=(client_socket,CVUUID))
+        thread = threading.Thread(target=handle_client, args=(client_socket,))
         thread.start()
 
 if __name__ == "__main__":
